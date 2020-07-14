@@ -6,5 +6,7 @@
 #define MIN (1e-30)
 int Gauss(double a[], double b[], int n);
 int GaussJordan(double a[], double b[], int n, int m);
-int TriMatrix(double b[], int n, int m, double d[]);
+int ChaseTridiagonal(double b[], int n, int m, double d[]);
+int Band(double b[],double d[],int n,int l,int il,int m);
+int LDLT(double a[],int n,int m,double c[]);
 #endif

@@ -107,11 +107,11 @@ b 右端的m组常量向量
 n 方程组的阶数
 m 右端向量的组数
  */
-int GaussJordan(double a[], double b[],int n,int m)
+int GaussJordan(double a[], double b[], int n, int m)
 {
     int *js, l, k, i, j, is, p, q;
     double d, t;
-    js =(int *) malloc(n * sizeof(int));
+    js = (int *)malloc(n * sizeof(int));
     l = 1;
     for (k = 0; k <= n - 1; k++)
     {
@@ -213,7 +213,7 @@ m 三对角线上的元素个数 m = 3n-2
 d 右端常数向量，返回是方程组的解
 返回值 0 工作失败， -1 m的值不对， 1 正常返回  
 */
-int TriMatrix(double b[], int n, int m, double d[])
+int ChaseTridiagonal(double b[], int n, int m, double d[])
 {
     int k, j;
     double s;
@@ -245,5 +245,224 @@ int TriMatrix(double b[], int n, int m, double d[])
     d[n - 1] = d[n - 1] / s;
     for (k = n - 2; k >= 0; k--)
         d[k] = d[k] - b[3 * k + 1] * d[k + 1];
+    return 1;
+}
+
+/*
+一般带型方程组求解
+b 存放带区的元素
+d 右端m组常数向量
+n 方程组阶数
+l 矩阵的半带宽
+il 系数矩阵的带宽 il = 2l+1
+m 方程组右端常量向量组数 
+*/
+int Band(double b[], double d[], int n, int l, int il, int m)
+{
+    int ls, k, i, j, is, u, v;
+    double p, t;
+    if (il != (2 * l + 1))
+    {
+        printf("fail\n");
+        return -1;
+    }
+    ls = l;
+    for (k = 0; k <= n - 2; k++)
+    {
+        p = 0.0;
+        for (i = k; i <= ls; i++)
+        {
+            t = fabs(b[i * il]);
+            if (t > p)
+            {
+                p = t;
+                is = i;
+            }
+        }
+        if (p < MIN)
+        {
+            printf("fail\n");
+            return (0);
+        }
+        for (j = 0; j <= m - 1; j++)
+        {
+            u = k * m + j;
+            v = is * m + j;
+            t = d[u];
+            d[u] = d[v];
+            d[v] = t;
+        }
+        for (j = 0; j <= il - 1; j++)
+        {
+            u = k * il + j;
+            v = is * il + j;
+            t = b[u];
+            b[u] = b[v];
+            b[v] = t;
+        }
+        for (j = 0; j <= m - 1; j++)
+        {
+            u = k * m + j;
+            d[u] = d[u] / b[k * il];
+        }
+        for (j = 1; j <= il - 1; j++)
+        {
+            u = k * il + j;
+            b[u] = b[u] / b[k * il];
+        }
+        for (i = k + 1; i <= ls; i++)
+        {
+            t = b[i * il];
+            for (j = 0; j <= m - 1; j++)
+            {
+                u = i * m + j;
+                v = k * m + j;
+                d[u] = d[u] - t * d[v];
+            }
+            for (j = 1; j <= il - 1; j++)
+            {
+                u = i * il + j;
+                v = k * il + j;
+                b[u - 1] = b[u] - t * b[v];
+            }
+            u = i * il + il - 1;
+            b[u] = 0.0;
+        }
+        if (ls != (n - 1))
+            ls = ls + 1;
+    }
+    p = b[(n - 1) * il];
+    if (fabs(p) < MIN)
+    {
+        printf("fail\n");
+        return (0);
+    }
+    for (j = 0; j <= m - 1; j++)
+    {
+        u = (n - 1) * m + j;
+        d[u] = d[u] / p;
+    }
+    ls = 1;
+    for (i = n - 2; i >= 0; i--)
+    {
+        for (k = 0; k <= m - 1; k++)
+        {
+            u = i * m + k;
+            for (j = 1; j <= ls; j++)
+            {
+                v = i * il + j;
+                is = (i + j) * m + k;
+                d[u] = d[u] - b[v] * d[is];
+            }
+        }
+        if (ls != (il - 1))
+            ls = ls + 1;
+    }
+    return 1;
+}
+
+/*
+ldlt分解
+a 存放对称系数矩阵
+n 阶数
+m 右端常数向量的组数
+c 返回m组解向量
+*/
+int LDLT(double a[], int n, int m, double c[])
+{
+    int i, j, l, k, u, v, w, k1, k2, k3;
+    double p;
+    if (fabs(a[0]) < MIN)
+    {
+        printf("fail \n");
+        return -1;
+    }
+    for (i = 1; i <= n - 1; i++)
+    {
+        u = i * n;
+        a[u] = a[u] / a[0];
+    }
+    for (i = 1; i <= n - 2; i++)
+    {
+        u = i * n + i;
+        for (j = 1; j <= i; j++)
+        {
+            v = n * i + j - 1;
+            l = (j - 1) * n + j - 1;
+            a[u] = a[u] - a[v] * a[v] * a[l];
+        }
+        p = a[u];
+        if (fabs(p) < MIN)
+        {
+            printf("1 fail\n");
+            return -1;
+        }
+        for (k = i + 1; k <= n - 1; k++)
+        {
+            u = k * n + i;
+            for (j = 1; j <= i; j++)
+            {
+                v = k * n + j - 1;
+                l = i * n + j - 1;
+                w = (j - 1) * n + j - 1;
+                a[u] = a[u] - a[v] * a[l] * a[w];
+            }
+            a[u] = a[u] / p;
+        }
+    }
+    u = n * n - 1;
+    for (j = 1; j <= n - 1; j++)
+    {
+        v = (n - 1) * n + j - 1;
+        w = (j - 1) * n + j - 1;
+        a[u] = a[u] - a[v] * a[v] * a[w];
+    }
+    p = a[u];
+    if (fabs(p)+1.0 == 1.0)
+    {
+        printf("2 fail\n");
+        return -1;
+    }
+    for (j = 0; j <= m - 1; j++)
+    {
+        for (i = 1; i <= n - 1; i++)
+        {
+            u = i * m + j;
+            for (k = 1; k <= i; k++)
+            {
+                v = i * n + k - 1;
+                w = (k - 1) * m + j;
+                c[u] = c[u] - a[v] * c[w];
+            }
+        }
+    }
+    for (i = 1; i <= n - 1; i++)
+    {
+        u = (i - 1) * n + i - 1;
+        for (j = i; j <= n - 1; j++)
+        {
+            v = (i - 1) * n + j;
+            w = j * n + i - 1;
+            a[v] = a[u] * a[w];
+        }
+    }
+    for (j = 0; j <= m - 1; j++)
+    {
+        u = (n - 1) * m + j;
+        c[u] = c[u] / p;
+        for (k = 1; k <= n - 1; k++)
+        {
+            k1 = n - k;
+            k3 = k1 - 1;
+            u = k3 * m + j;
+            for (k2 = k1; k2 <= n - 1; k2++)
+            {
+                v = k3 * n + k2;
+                w = k2 * m + j;
+                c[u] = c[u] - a[v] * c[w];
+            }
+            c[u] = c[u] / a[k3 * n + k3];
+        }
+    }
     return 1;
 }
