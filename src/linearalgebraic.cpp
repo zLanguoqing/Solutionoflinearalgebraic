@@ -466,3 +466,133 @@ int LDLT(double a[], int n, int m, double c[])
     }
     return 1;
 }
+/*
+*Cholesky分解
+a 对称正定矩阵，返回时其上三角存放着分解后的U矩阵
+n 阶数
+m 右端组数
+d 返回m组解向量
+*/
+int Cholesky(double a[],int n,int m,double d[])
+{
+    int i,j,k,u,v;
+    if(a[0] <MIN || a[0]<0.0)
+    {
+        printf(" 1 fail \n");
+        return -1;
+    }
+    a[0]=sqrt(a[0]);
+    for(j =1;j <= n-1;j++)
+    {
+         a[j] = a[j]/a[0];
+    }
+
+    for (i = 1; i <= n - 1; i++)
+    {
+        u = i * n + i;
+        for (j = 1; j <= i; j++)
+        {
+            v = (j - 1) * n + i;
+            a[u] = a[u] - a[v] * a[v];
+        }
+        printf("a[u] %f \n", a[u]);
+        if(a[u] < 0.0 )
+        {
+            printf("2 fail \n");
+            return -1;
+        }
+        a[u] = sqrt(a[u]);
+        if(i != (n-1))
+        {
+            for(j = i+1; j <= n-1;j++)
+            {
+                v = i*n+j;
+                for(k =1;k<=i;k++)
+                {
+                    a[v] = a[v] - a[(k - 1) * n + i] * a[(k - 1) * n + j];
+                }
+                a[v] = a[v] / a[u];
+            }
+        }
+    }
+    for(j =0; j <=m-1;j++)
+    {
+        d[j] = d[j]/a[0];
+        for(i =1;i <=n-1;i++)
+        {
+            u = i*n+i;
+            v = i*m+j;
+            for(k = 1; k <= i; k++)
+            {
+                d[v] = d[v]-a[(k-1)*n+i]*d[(k-1)*m+j];
+            }
+            d[v] =d[v]/a[u];
+        }
+    }
+    for(j = 0; j <=m-1; j++)
+    {
+        u = (n-1)*m+j;
+        d[u] = d[u] / a[n * n - 1];
+        for (k = n - 1; k >= 1; k--)
+        {
+            u = (k-1)*m+j;
+            for (i = k; i <= n - 1; i++)
+            {
+                v = (k - 1) * n + i;
+                d[u] = d[u] - a[v] * d[i * m + j];
+            }
+            v = (k - 1) * n + k - 1;
+            d[u] = d[u] / a[v];
+        }
+
+    }
+    return 1;
+}
+/*
+高斯赛尔德迭代法
+a 存放系数矩阵
+b 右端常量向量
+n 阶数
+x 接向量
+eps 精度要求
+*/
+int GaussSeidel(double a[], double b[], int n, double x[], double eps)
+{
+    int i, j, u, v;
+    double p, t, s, q;
+    for (i = 0; i <= n - 1; i++)
+    {
+        u = i * n + i;
+        p = 0.0;
+        x[i] = 0.0;
+        for (j = 0; j <= n - 1; j++)
+            if (i != j)
+            {
+                v = i * n + j;
+                p = p + fabs(a[v]);
+            }
+        if (p >= fabs(a[u]))
+        {
+            printf("fail\n");
+            return -1;
+        }
+    }
+    p = eps + 1.0;
+    while (p >= eps)
+    {
+        p = 0.0;
+        for (i = 0; i <= n - 1; i++)
+        {
+            t = x[i];
+            s = 0.0;
+            for (j = 0; j <= n - 1; j++)
+                if (j != i)
+                    s = s + a[i * n + j] * x[j];
+            x[i] = (b[i] - s) / a[i * n + i];
+            q = fabs(x[i] - t) / (1.0 + fabs(x[i]));
+            if (q > p)
+                p = q;
+        }
+    }
+    return 1;
+}
